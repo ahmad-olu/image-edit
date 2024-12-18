@@ -5,7 +5,14 @@ import { AppbarComponent } from '../../components/appbar/appbar.component';
 import { open } from '@tauri-apps/plugin-dialog';
 import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { appDataDir, join } from '@tauri-apps/api/path';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+
+export interface ImageState {
+  og_image?: Uint8Array;
+  edit_image?: Uint8Array;
+}
+
+// fixme: make sure the empty or null image type state ui is covered.
 
 @Component({
   selector: 'app-home',
@@ -27,12 +34,12 @@ import { convertFileSrc } from '@tauri-apps/api/core';
       }
       {{ dbg() }}
       <div class="flex w-full h-auto">
-        <div class="flex-none bg-gray-100">
+        <div class="flex-none bg-gray-50">
           <img
             *ngIf="imagePath()"
             [src]="imagePath()"
             alt="Original Image"
-            class="w-80 h-80 object-contain border-r-4"
+            class="w-auto h-96 object-contain border-r-4"
           />
         </div>
         <!-- <div class="flex-1 bg-gray-200">
@@ -45,6 +52,31 @@ import { convertFileSrc } from '@tauri-apps/api/core';
           </div> -->
       </div>
     </div>
+    <div>
+      <div class="mb-4 flex items-center space-x-2">
+        <h6 class="text-gray-700">Resize:</h6>
+        <input
+          type="number"
+          [value]="resizeWidth()"
+          placeholder="Width"
+          class="p-2 border rounded w-20"
+        />
+        <input
+          type="number"
+          [value]="resizeHeight()"
+          placeholder="Height"
+          class="p-2 border rounded w-20"
+        />
+      </div>
+    </div>
+    <div class="mb-2">
+      <button
+        class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-blue-600"
+        (click)="editImage()"
+      >
+        Edit Image
+      </button>
+    </div>
   `,
   styles: ``,
 })
@@ -54,6 +86,28 @@ export class HomeComponent {
   processing = signal<boolean>(false);
   dbg = signal<string>('0');
 
+  resizeWidth = signal<number>(0);
+  resizeHeight = signal<number>(0);
+
+  async editImage() {
+    try {
+      let res = await invoke<Uint8Array>('edit_image', {
+        params: { resize: [this.resizeWidth(), this.resizeHeight()] },
+      });
+      const base64String = btoa(
+        new Uint8Array(res).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          '',
+        ),
+      );
+
+      const dataUrl = `data:image/png;base64,${base64String}`;
+
+      this.imagePath.set(dataUrl);
+    } catch (error) {
+      console.log('error importing image: ' + error);
+    }
+  }
   async importImage() {
     this.dbg.set('1');
     try {
@@ -79,16 +133,26 @@ export class HomeComponent {
         // const assetUrl = convertFileSrc(filePath);
         // this.dbg.set('7');
 
-        //? Convert binary data to Base64
-        const base64String = btoa(
-          new Uint8Array(fileContent).reduce(
-            (data, byte) => data + String.fromCharCode(byte),
-            '',
-          ),
-        );
-        const dataUrl = `data:image/png;base64,${base64String}`;
+        let res = await invoke<Uint8Array | null>('import_image', {
+          imageData: fileContent,
+        });
 
-        this.imagePath.set(dataUrl);
+        if (res !== null) {
+          //? Convert binary data to Base64
+          const base64String = btoa(
+            new Uint8Array(res).reduce(
+              (data, byte) => data + String.fromCharCode(byte),
+              '',
+            ),
+          );
+
+          const dataUrl = `data:image/png;base64,${base64String}`;
+
+          this.imagePath.set(dataUrl);
+        } else {
+          this.imagePath.set(null);
+        }
+
         this.dbg.set('8');
       }
       this.dbg.set('9');
@@ -98,7 +162,24 @@ export class HomeComponent {
     }
   }
 
-  constructor(private fileService: ImageService) {}
+  constructor(private fileService: ImageService) {
+    invoke<ImageState>('get_image').then((file) => {
+      if (file.edit_image !== null || file.edit_image !== undefined) {
+        let a = file.edit_image;
+        const base64String = btoa(
+          new Uint8Array(file.edit_image!).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            '',
+          ),
+        );
+        const dataUrl = `data:image/png;base64,${base64String}`;
+
+        this.imagePath.set(dataUrl);
+      } else {
+        this.imagePath.set(null);
+      }
+    });
+  }
 }
 
 // @Component({

@@ -2,7 +2,7 @@ use std::{io::Cursor, sync::Mutex};
 
 use image::{ImageFormat, ImageReader};
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{Manager, State};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -12,15 +12,15 @@ fn greet(name: &str) -> String {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct ImageState {
-    og_image: Vec<u8>,
-    edit_image: Vec<u8>,
+    og_image: Option<Vec<u8>>,
+    edit_image: Option<Vec<u8>>,
 }
 
 #[tauri::command]
-fn import_image(image_data: Vec<u8>, state: State<'_, Mutex<ImageState>>) -> Vec<u8> {
+fn import_image(image_data: Vec<u8>, state: State<'_, Mutex<ImageState>>) -> Option<Vec<u8>> {
     let mut state = state.lock().unwrap();
-    state.og_image = image_data.clone();
-    state.edit_image = image_data;
+    state.og_image = Some(image_data.clone());
+    state.edit_image = Some(image_data);
     state.og_image.clone()
 }
 
@@ -40,12 +40,12 @@ pub struct ManipulationParams {
 
 #[tauri::command]
 async fn edit_image(
-    state: State<'_, Mutex<ImageState>>,
     params: ManipulationParams,
+    state: State<'_, Mutex<ImageState>>,
 ) -> Result<Vec<u8>, String> {
     let state = state.lock().unwrap();
 
-    let mut img = image::load_from_memory(&state.clone().og_image)
+    let mut img = image::load_from_memory(&state.clone().og_image.unwrap())
         .map_err(|err| format!("Failed to load image: {}", err))?;
 
     if let Some((width, height)) = params.resize {
@@ -74,6 +74,11 @@ async fn edit_image(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            app.manage(Mutex::new(ImageState::default()));
+            Ok(())
+        })
+        //.manage(ImageState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
