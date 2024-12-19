@@ -36,8 +36,8 @@ type rt = 'w' | 'h';
       @if (processing() === true) {
         Processing...
       }
-      {{ resizeWidth() }}
-      {{ resizeHeight() }}
+      <!-- {{ toggleDescription() }} -->
+      {{ dbg() }}
       <div class="flex w-full h-auto">
         <div class="flex-none bg-gray-50">
           <img
@@ -57,8 +57,18 @@ type rt = 'w' | 'h';
           </div> -->
       </div>
     </div>
-    <div>
-      <div class="mb-4 flex items-center space-x-2">
+    <div class="">
+      <div
+        class="mb-4 ms-4 flex items-center space-x-2"
+        [class]="isResizeEnable() ? '' : 'opacity-40'"
+      >
+        <input
+          type="checkbox"
+          id="enableResize"
+          [value]="isResizeEnable()"
+          (change)="onInputBoolChange($event)"
+          class="mr-2"
+        />
         <h6 class="text-gray-700">Resize:</h6>
         <input
           type="number"
@@ -74,6 +84,20 @@ type rt = 'w' | 'h';
           placeholder="Height"
           class="p-2 border rounded w-20"
         />
+        <span
+          class="ml-auto cursor-pointer text-blue-500"
+          (click)="toggleDescription()"
+          title="Toggle Description"
+        >
+          show
+        </span>
+      </div>
+      <div *ngIf="showDescription()" class="text-sm text-gray-600">
+        <p>Enter the desired dimensions for the image resize:</p>
+        <ul class="list-disc pl-5">
+          <li><b>Width:</b> The width in pixels for the resized image.</li>
+          <li><b>Height:</b> The height in pixels for the resized image.</li>
+        </ul>
       </div>
     </div>
     <div class="mb-2">
@@ -97,6 +121,23 @@ export class HomeComponent {
 
   resizeWidth = signal<number>(100);
   resizeHeight = signal<number>(100);
+
+  isResizeEnable = signal<boolean>(true);
+  showDescription = signal<boolean>(false);
+
+  onInputBoolChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).checked;
+
+    this.isResizeEnable.set(value);
+  }
+
+  toggleDescription(): void {
+    if (this.showDescription() === true) {
+      this.showDescription.set(false);
+    } else {
+      this.showDescription.set(true);
+    }
+  }
 
   // Generic function to handle changes
   onInputChange(event: Event, property: rt): void {
