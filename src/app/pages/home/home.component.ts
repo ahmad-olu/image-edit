@@ -6,12 +6,16 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { appDataDir, join } from '@tauri-apps/api/path';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+import {
+  createManipulationParams,
+  ManipulationParams,
+} from '../../model/manipulation-params';
 
 export interface ImageState {
   og_image?: Uint8Array;
   edit_image?: Uint8Array;
 }
-
+type rt = 'w' | 'h';
 // fixme: make sure the empty or null image type state ui is covered.
 
 @Component({
@@ -32,14 +36,15 @@ export interface ImageState {
       @if (processing() === true) {
         Processing...
       }
-      {{ dbg() }}
+      {{ resizeWidth() }}
+      {{ resizeHeight() }}
       <div class="flex w-full h-auto">
         <div class="flex-none bg-gray-50">
           <img
             *ngIf="imagePath()"
             [src]="imagePath()"
             alt="Original Image"
-            class="w-auto h-96 object-contain border-r-4"
+            class="w-auto h-96 object-scale-down border-r-4"
           />
         </div>
         <!-- <div class="flex-1 bg-gray-200">
@@ -58,12 +63,14 @@ export interface ImageState {
         <input
           type="number"
           [value]="resizeWidth()"
+          (change)="onInputChange($event, 'w')"
           placeholder="Width"
           class="p-2 border rounded w-20"
         />
         <input
           type="number"
           [value]="resizeHeight()"
+          (change)="onInputChange($event, 'h')"
           placeholder="Height"
           class="p-2 border rounded w-20"
         />
@@ -84,10 +91,24 @@ export class HomeComponent {
   imageData = signal<string | null>(null);
   imagePath = signal<string | null>(null);
   processing = signal<boolean>(false);
+
+  params = signal<ManipulationParams>(createManipulationParams());
   dbg = signal<string>('0');
 
-  resizeWidth = signal<number>(0);
-  resizeHeight = signal<number>(0);
+  resizeWidth = signal<number>(100);
+  resizeHeight = signal<number>(100);
+
+  // Generic function to handle changes
+  onInputChange(event: Event, property: rt): void {
+    const value = (event.target as HTMLInputElement).value;
+
+    // Dynamically update the specified property
+    if (property === 'w') {
+      this.resizeWidth.set(Number(value));
+    } else if (property === 'h') {
+      this.resizeHeight.set(Number(value));
+    }
+  }
 
   async editImage() {
     try {

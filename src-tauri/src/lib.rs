@@ -30,7 +30,7 @@ fn get_image(state: State<'_, Mutex<ImageState>>) -> ImageState {
     state.clone()
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ManipulationParams {
     pub resize: Option<(u32, u32)>,         // (width, height)
     pub crop: Option<(u32, u32, u32, u32)>, // (x, y, width, height)
