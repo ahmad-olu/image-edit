@@ -8,20 +8,23 @@ import { appDataDir, join } from '@tauri-apps/api/path';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import {
   createManipulationParams,
+  createToggleAndDescription,
   ManipulationParams,
+  ToggleAndDescription,
 } from '../../model/manipulation-params';
+import { EditBarComponent } from '../../components/edit-bar/edit-bar.component';
 
 export interface ImageState {
   og_image?: Uint8Array;
   edit_image?: Uint8Array;
 }
-type rt = 'w' | 'h';
+
 // fixme: make sure the empty or null image type state ui is covered.
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [NgIf, AppbarComponent],
+  imports: [NgIf, AppbarComponent, EditBarComponent],
   template: `
     <app-appbar />
     <div class="flex flex-col items-center p-4">
@@ -38,6 +41,7 @@ type rt = 'w' | 'h';
       }
       <!-- {{ toggleDescription() }} -->
       {{ dbg() }}
+      <!-- {{ toggleAndDescription().resize.showDescription }} -->
       <div class="flex w-full h-auto">
         <div class="flex-none bg-gray-50">
           <img
@@ -57,49 +61,7 @@ type rt = 'w' | 'h';
           </div> -->
       </div>
     </div>
-    <div class="">
-      <div
-        class="mb-4 ms-4 flex items-center space-x-2"
-        [class]="isResizeEnable() ? '' : 'opacity-40'"
-      >
-        <input
-          type="checkbox"
-          id="enableResize"
-          [value]="isResizeEnable()"
-          (change)="onInputBoolChange($event)"
-          class="mr-2"
-        />
-        <h6 class="text-gray-700">Resize:</h6>
-        <input
-          type="number"
-          [value]="resizeWidth()"
-          (change)="onInputChange($event, 'w')"
-          placeholder="Width"
-          class="p-2 border rounded w-20"
-        />
-        <input
-          type="number"
-          [value]="resizeHeight()"
-          (change)="onInputChange($event, 'h')"
-          placeholder="Height"
-          class="p-2 border rounded w-20"
-        />
-        <span
-          class="ml-auto cursor-pointer text-blue-500"
-          (click)="toggleDescription()"
-          title="Toggle Description"
-        >
-          show
-        </span>
-      </div>
-      <div *ngIf="showDescription()" class="text-sm text-gray-600">
-        <p>Enter the desired dimensions for the image resize:</p>
-        <ul class="list-disc pl-5">
-          <li><b>Width:</b> The width in pixels for the resized image.</li>
-          <li><b>Height:</b> The height in pixels for the resized image.</li>
-        </ul>
-      </div>
-    </div>
+    <app-edit-bar />
     <div class="mb-2">
       <button
         class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-blue-600"
@@ -116,45 +78,18 @@ export class HomeComponent {
   imagePath = signal<string | null>(null);
   processing = signal<boolean>(false);
 
-  params = signal<ManipulationParams>(createManipulationParams());
   dbg = signal<string>('0');
 
-  resizeWidth = signal<number>(100);
-  resizeHeight = signal<number>(100);
+  //   resizeWidth = signal<number>(100);
+  //   resizeHeight = signal<number>(100);
 
-  isResizeEnable = signal<boolean>(true);
-  showDescription = signal<boolean>(false);
-
-  onInputBoolChange(event: Event): void {
-    const value = (event.target as HTMLInputElement).checked;
-
-    this.isResizeEnable.set(value);
-  }
-
-  toggleDescription(): void {
-    if (this.showDescription() === true) {
-      this.showDescription.set(false);
-    } else {
-      this.showDescription.set(true);
-    }
-  }
-
-  // Generic function to handle changes
-  onInputChange(event: Event, property: rt): void {
-    const value = (event.target as HTMLInputElement).value;
-
-    // Dynamically update the specified property
-    if (property === 'w') {
-      this.resizeWidth.set(Number(value));
-    } else if (property === 'h') {
-      this.resizeHeight.set(Number(value));
-    }
-  }
+  //   isResizeEnable = signal<boolean>(true);
+  //   showDescription = signal<boolean>(false);
 
   async editImage() {
     try {
       let res = await invoke<Uint8Array>('edit_image', {
-        params: { resize: [this.resizeWidth(), this.resizeHeight()] },
+        // !   params: this.params(),
       });
       const base64String = btoa(
         new Uint8Array(res).reduce(

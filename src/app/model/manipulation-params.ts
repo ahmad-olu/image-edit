@@ -5,6 +5,18 @@ export interface ManipulationParams {
   invert?: boolean;
 }
 
+export interface ToggleAndDescriptionSingle {
+  toggle: boolean;
+  showDescription: boolean;
+  description: string;
+}
+export interface ToggleAndDescription {
+  resize: ToggleAndDescriptionSingle;
+  crop: ToggleAndDescriptionSingle;
+  grayscale: ToggleAndDescriptionSingle;
+  invert: ToggleAndDescriptionSingle;
+}
+
 export function createManipulationParams(
   params: Partial<ManipulationParams> = {},
 ): ManipulationParams {
@@ -17,32 +29,86 @@ export function createManipulationParams(
   };
 }
 
-// type ManipulationType = 'resize' | 'crop' | 'grayscale' | 'invert';
+function createToggleAndDescriptionSingle(
+  params: string,
+): ToggleAndDescriptionSingle {
+  return {
+    toggle: false,
+    showDescription: false,
+    description: params,
+  };
+}
 
-// onInputChange(event: Event, property: ManipulationType, field?: string): void {
-//   const value = (event.target as HTMLInputElement).value;
+export function createToggleAndDescription(
+  params: Partial<ToggleAndDescription> = {},
+): ToggleAndDescription {
+  return {
+    resize: createToggleAndDescriptionSingle(`
+        <p>Enter the desired dimensions for the image resize:</p>
+        <ul class="list-disc pl-5">
+          <li><b>Width:</b> The width in pixels for the resized image.</li>
+          <li><b>Height:</b> The height in pixels for the resized image.</li>
+        </ul>
+        `),
+    crop: createToggleAndDescriptionSingle(``),
+    grayscale: createToggleAndDescriptionSingle(''),
+    invert: createToggleAndDescriptionSingle(''),
+    ...params, // Override defaults with provided values
+  };
+}
 
-//   // Handle dynamic updates
-//   if (property === 'resize') {
-//     if (field === 'w') {
-//       this.resizeWidth = Number(value);
-//     } else if (field === 'h') {
-//       this.resizeHeight = Number(value);
-//     }
-//   } else if (property === 'crop') {
-//     // Assume crop has fields x, y, width, height
-//     if (field === 'x') {
-//       this.cropX = Number(value);
-//     } else if (field === 'y') {
-//       this.cropY = Number(value);
-//     } else if (field === 'width') {
-//       this.cropWidth = Number(value);
-//     } else if (field === 'height') {
-//       this.cropHeight = Number(value);
-//     }
-//   } else if (property === 'grayscale') {
-//     this.grayscale = value === 'true'; // Handle as boolean toggle
-//   } else if (property === 'invert') {
-//     this.invert = value === 'true'; // Handle as boolean toggle
-//   }
-// }
+export type ManipulationType = 'resize' | 'crop' | 'grayscale' | 'invert';
+
+export function onInputChange(
+  event: Event,
+  params: ManipulationParams,
+  property: ManipulationType,
+  field?: string,
+) {
+  const value = (event.target as HTMLInputElement).value;
+  // Handle dynamic updates
+  if (property === 'resize') {
+    if (field === 'w') {
+      params.resize![0] = Number(value);
+    } else if (field === 'h') {
+      params.resize![1] = Number(value);
+    }
+  } else if (property === 'crop') {
+    // Assume crop has fields x, y, width, height
+    if (field === 'x') {
+      params.crop![0] = Number(value);
+    } else if (field === 'y') {
+      params.crop![1] = Number(value);
+    } else if (field === 'width') {
+      params.crop![2] = Number(value);
+    } else if (field === 'height') {
+      params.crop![3] = Number(value);
+    }
+  } else if (property === 'grayscale') {
+    params.grayscale = value === 'true'; // Handle as boolean toggle
+  } else if (property === 'invert') {
+    params.invert = value === 'true'; // Handle as boolean toggle
+  }
+}
+
+export function prepareForSerialization(
+  params: ManipulationParams,
+  toggleState: ToggleAndDescription,
+): Partial<ManipulationParams> {
+  const serializedParams: Partial<ManipulationParams> = {};
+
+  if (toggleState.resize.toggle) {
+    serializedParams.resize = params.resize;
+  }
+  if (toggleState.crop.toggle) {
+    serializedParams.crop = params.crop;
+  }
+  if (toggleState.grayscale.toggle) {
+    serializedParams.grayscale = params.grayscale;
+  }
+  if (toggleState.invert.toggle) {
+    serializedParams.invert = params.invert;
+  }
+
+  return serializedParams;
+}
