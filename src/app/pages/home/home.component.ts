@@ -42,23 +42,22 @@ export interface ImageState {
       <!-- {{ toggleDescription() }} -->
       {{ dbg() }}
       <!-- {{ toggleAndDescription().resize.showDescription }} -->
-      <div class="flex w-full h-auto">
-        <div class="flex-none bg-gray-50">
+      <div class="flex justify-center items-center w-full h-auto">
+        <div class="flex bg-gray-50 w-full md:w-auto">
+          <!-- <img
+            [src]=""
+            alt="Edited Image"
+            class="w-full h-96 md:w-auto md:h-96 object-scale-down border-r-4 rounded-[12px]"
+            [style.height]="'30rem'"
+          /> -->
           <img
             *ngIf="imagePath()"
             [src]="imagePath()"
             alt="Original Image"
-            class="w-auto h-96 object-scale-down border-r-4"
+            class="w-full h-96 md:w-auto md:h-96 object-scale-down border-r-4 rounded-[12px]"
+            [style.height]="'30rem'"
           />
         </div>
-        <!-- <div class="flex-1 bg-gray-200">
-            <img
-            *ngIf="editedImageSrc"
-            [src]="editedImageSrc"
-            alt="Edited Image"
-            class="w-full h-full object-contain"
-          />
-          </div> -->
       </div>
     </div>
     <app-edit-bar />
