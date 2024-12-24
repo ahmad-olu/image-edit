@@ -12,7 +12,7 @@ import {
   ToggleAndDescriptionSingle,
 } from '../model/manipulation-params';
 import { readFile } from '@tauri-apps/plugin-fs';
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 
 @Injectable({
   providedIn: 'root',
@@ -97,12 +97,13 @@ export class ImageService {
 
   onInputBoolChange(event: Event, manipulationType: ManipulationType): void {
     const value = (event.target as HTMLInputElement).checked;
-    if (manipulationType === 'resize') {
-      const resize = this.toggleAndDescription().resize;
+    const toggleAndDescription = this.toggleAndDescription();
+
+    if (manipulationType in toggleAndDescription) {
       this.toggleAndDescription.set({
-        ...this.toggleAndDescription(),
-        resize: {
-          ...resize,
+        ...toggleAndDescription,
+        [manipulationType]: {
+          ...toggleAndDescription[manipulationType],
           toggle: value,
         },
       });
@@ -110,63 +111,115 @@ export class ImageService {
   }
 
   toggleDescription(manipulationType: ManipulationType): void {
-    if (manipulationType === 'resize') {
-      const resize = this.toggleAndDescription().resize;
+    const toggleAndDescription = this.toggleAndDescription();
+
+    if (manipulationType in toggleAndDescription) {
       this.toggleAndDescription.set({
-        ...this.toggleAndDescription(),
-        resize: {
-          ...resize,
-          showDescription: resize.showDescription === true ? false : true,
+        ...toggleAndDescription,
+        [manipulationType]: {
+          ...toggleAndDescription[manipulationType],
+          showDescription:
+            !toggleAndDescription[manipulationType].showDescription,
         },
       });
     }
   }
 
   onNumberValue(manipulationType: ManipulationType, field: DataField): number {
-    if (manipulationType === 'resize') {
-      if (field === 'width') {
-        return this.params().resize?.[0] ?? 0;
-      } else if (field === 'height') {
-        return this.params().resize?.[1] ?? 0;
-      }
+    const resizeFieldIndexMap: Record<DataField, number> = {
+      width: 0,
+      height: 1,
+      x: 2, // should not get here
+      y: 3, // should not get here
+    };
+
+    const cropFieldIndexMap: Record<DataField, number> = {
+      x: 0,
+      y: 1,
+      width: 2,
+      height: 3,
+    };
+
+    if (manipulationType === 'resize' && field in resizeFieldIndexMap) {
+      return this.params().resize?.[resizeFieldIndexMap[field]] ?? 0;
     }
+
+    if (manipulationType === 'crop' && field in cropFieldIndexMap) {
+      return this.params().crop?.[cropFieldIndexMap[field]] ?? 0;
+    }
+
     return 0;
+  }
+  onBooleanValue(manipulationType: ManipulationType): boolean {
+    if (manipulationType === 'grayscale') {
+      return this.params().grayscale ?? false;
+    }
+
+    if (manipulationType === 'invert') {
+      return this.params().invert ?? false;
+    }
+
+    return false;
   }
 
   onToggleAndDescription(
     manipulationType: ManipulationType,
   ): ToggleAndDescriptionSingle {
-    if (manipulationType === 'resize') {
-      return this.toggleAndDescription().resize;
-    }
-    return {
-      toggle: false,
-      showDescription: false,
-      description: '',
-    };
+    const toggleAndDescription = this.toggleAndDescription();
+
+    return (
+      toggleAndDescription[manipulationType] ?? {
+        toggle: false,
+        showDescription: false,
+        description: '',
+      }
+    );
   }
 
   // Generic function to handle changes
   onInputChange(
     event: Event,
     manipulationType: ManipulationType,
-    field: DataField,
+    field?: DataField,
   ): void {
     const value = (event.target as HTMLInputElement).value;
-    const resize = this.params().resize ?? [0, 0];
-
+    const checked = (event.target as HTMLInputElement).checked;
     if (manipulationType === 'resize') {
-      if (field === 'width') {
+      const [currentWidth, currentHeight] = this.params().resize ?? [0, 0];
+      const updatedResize: [number, number] =
+        field === 'width'
+          ? [Number(value), currentHeight]
+          : [currentWidth, Number(value)];
+
+      this.params.set({
+        ...this.params(),
+        resize: updatedResize,
+      });
+    } else if (manipulationType === 'crop') {
+      const crop = this.params().crop ?? [0, 0, 0, 0];
+
+      const fieldIndexMap: Record<string, number> = {
+        x: 0,
+        y: 1,
+        width: 2,
+        height: 3,
+      };
+
+      const index = fieldIndexMap[field!];
+      if (index !== undefined) {
+        const updatedCrop: [number, number, number, number] = [...crop];
+        updatedCrop[index] = Number(value);
+
         this.params.set({
           ...this.params(),
-          resize: [Number(value), resize[1]],
-        });
-      } else if (field === 'height') {
-        this.params.set({
-          ...this.params(),
-          resize: [resize[0], Number(value)],
+          crop: updatedCrop,
         });
       }
+    } else if (manipulationType === 'grayscale') {
+      this.params.set({
+        ...this.params(),
+        grayscale: checked,
+      });
     }
   }
 
@@ -195,13 +248,20 @@ export class ImageService {
     }
   }
 
-  async saveImage(editedFilePath: string): Promise<void> {
-    // const savePath = await save({
-    //   defaultPath: 'edited-image.png',
-    // });
-    // if (savePath) {
-    //   await invoke('save_image', { editedFilePath, savePath });
-    // }
+  async saveImage(): Promise<void> {
+    //todo ! make this work
+    const savePath = await save({
+      defaultPath: 'edited-image.png',
+      //   filters: [
+      //     {
+      //       name: 'edited-image',
+      //       extensions: ['png', 'jpeg'],
+      //     },
+      //   ],
+    });
+    if (savePath) {
+      await invoke('save_image', { path: savePath });
+    }
   }
 
   constructor() {}

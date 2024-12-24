@@ -17,43 +17,47 @@ import { invoke } from '@tauri-apps/api/core';
       <div class="mb-2">
         <button
           class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-blue-600"
-          (click)="imageService.importImage()"
+          (click)="imageService.saveImage()"
         >
-          Upload Image
+          Save Image
         </button>
       </div>
-      @if (processing() === true) {
-        Processing...
-      }
-      <!-- {{ toggleDescription() }} -->
-      {{ dbg() }}
-      <!-- {{ toggleAndDescription().resize.showDescription }} -->
-      <div class="flex justify-center items-center w-full h-auto">
-        <div class="flex bg-gray-50 w-full md:w-auto">
-          <!-- <img
-            [src]=""
-            alt="Edited Image"
-            class="w-full h-96 md:w-auto md:h-96 object-scale-down border-r-4 rounded-[12px]"
-            [style.height]="'30rem'"
-          /> -->
-          <img
-            *ngIf="imageService.editedImagePath()"
-            [src]="imageService.editedImagePath()"
-            alt="Original Image"
-            class="w-full h-96 md:w-auto md:h-96 object-scale-down border-r-4 rounded-[12px]"
-            [style.height]="'30rem'"
-          />
+      <div class="flex flex-col items-center p-4">
+        <div class="mb-2">
+          <button
+            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-blue-600"
+            (click)="imageService.importImage()"
+          >
+            Upload Image
+          </button>
+        </div>
+        @if (processing() === true) {
+          Processing...
+        }
+        <!-- {{ toggleDescription() }} -->
+        {{ dbg() }}
+        <!-- {{ toggleAndDescription().resize.showDescription }} -->
+        <div class="flex justify-center items-center w-full h-auto">
+          <div class="flex bg-gray-50 w-full md:w-auto">
+            <img
+              *ngIf="imageService.editedImagePath()"
+              [src]="imageService.editedImagePath()"
+              alt="Edited Image"
+              class="w-full h-96 md:w-auto md:h-96 object-scale-down border-r-4 rounded-[12px]"
+              [style.height]="'30rem'"
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <app-edit-bar />
-    <div class="mb-2">
-      <button
-        class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-blue-600"
-        (click)="imageService.editImage()"
-      >
-        Edit Image
-      </button>
+      <app-edit-bar />
+      <div class="mb-2">
+        <button
+          class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-blue-600"
+          (click)="imageService.editImage()"
+        >
+          Edit Image
+        </button>
+      </div>
     </div>
   `,
   styles: ``,

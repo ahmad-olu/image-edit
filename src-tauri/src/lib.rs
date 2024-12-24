@@ -43,7 +43,11 @@ async fn edit_image(
     params: ManipulationParams,
     state: State<'_, Mutex<ImageState>>,
 ) -> Result<Vec<u8>, String> {
-    let state = state.lock().unwrap();
+    let mut state = state.lock().unwrap();
+
+    if state.edit_image.is_none() || state.og_image.is_none() {
+        return Ok(Vec::<u8>::new());
+    }
 
     let mut img = image::load_from_memory(&state.clone().og_image.unwrap())
         .map_err(|err| format!("Failed to load image: {}", err))?;
@@ -68,7 +72,31 @@ async fn edit_image(
     let _ = img
         .write_to(&mut output, ImageFormat::Png)
         .map_err(|err| format!("failed to write image: {}", err))?;
+
+    state.edit_image = Some(output.clone().into_inner());
     Ok(output.into_inner())
+}
+
+#[tauri::command]
+async fn save_image(
+    path: Option<String>,
+    state: State<'_, Mutex<ImageState>>,
+) -> Result<(), String> {
+    let state = state.lock().unwrap();
+
+    if state.edit_image.is_none() || state.og_image.is_none() {
+        return Ok(());
+    }
+
+    let img = image::load_from_memory(&state.clone().edit_image.unwrap())
+        .map_err(|err| format!("Failed to load image: {}", err))?;
+
+    if path.is_none() {
+        return Ok(());
+    }
+    img.save(path.unwrap()).expect("Unable to Save image");
+
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -86,7 +114,8 @@ pub fn run() {
             greet,
             import_image,
             get_image,
-            edit_image
+            edit_image,
+            save_image,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

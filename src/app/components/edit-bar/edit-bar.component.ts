@@ -1,18 +1,7 @@
+import { Component, inject, input, signal } from '@angular/core';
 import {
-  Component,
-  inject,
-  Input,
-  input,
-  signal,
-  ViewChild,
-} from '@angular/core';
-import {
-  createManipulationParams,
-  createToggleAndDescription,
   DataField,
-  ManipulationParams,
   ManipulationType,
-  ToggleAndDescription,
   ToggleAndDescriptionSingle,
 } from '../../model/manipulation-params';
 import { NgFor, NgIf, TitleCasePipe } from '@angular/common';
@@ -26,6 +15,7 @@ import { forwardRef } from '@angular/core';
     NgIf,
     NgFor,
     forwardRef(() => EditBarNumberInputButtonComponent),
+    forwardRef(() => EditBarCheckBoxInputButtonComponent),
     TitleCasePipe,
   ],
   template: `
@@ -34,19 +24,30 @@ import { forwardRef } from '@angular/core';
         class="mb-4 ms-4 flex items-center space-x-2"
         [class]="onToggleAndDescription().toggle ? '' : 'opacity-40'"
       >
-        <input
-          type="checkbox"
-          id="enableResize"
-          [value]="onToggleAndDescription().toggle"
-          (change)="this.onInputBoolChange($event)"
-          class="mr-2"
-        />
+        <label class="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            [value]="onToggleAndDescription().toggle"
+            (change)="this.onInputBoolChange($event)"
+            class="sr-only peer"
+          />
+          <div
+            class="relative  w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
+          ></div>
+        </label>
+
         <h6 class="text-gray-700">{{ manipulationType() | titlecase }}:</h6>
         <div *ngFor="let val of inputButtonVal(); track: val">
-          <app-edit-bar-number-input-button
-            [dataField]="val.dataField"
-            [manipulationType]="val.manipulationType"
-          />
+          @if (val.dataField != null || val.dataField != undefined) {
+            <app-edit-bar-number-input-button
+              [dataField]="val.dataField!"
+              [manipulationType]="val.manipulationType"
+            />
+          } @else {
+            <app-edit-bar-checkbox-input-button
+              [manipulationType]="val.manipulationType"
+            />
+          }
         </div>
         <!-- @for (val of inputButtonVal(); track val) { } -->
         <button
@@ -70,12 +71,7 @@ import { forwardRef } from '@angular/core';
 })
 export class EditBarSingleComponent {
   manipulationType = input.required<ManipulationType>();
-  inputButtonVal = input.required<
-    {
-      dataField: DataField;
-      manipulationType: ManipulationType;
-    }[]
-  >();
+  inputButtonVal = input.required<InputButtonValueModel[]>();
 
   //  toggleAndDescription = input.required<boolean>();
   // toggleDescriptionSingle = input.required<ToggleAndDescriptionSingle>();
@@ -87,9 +83,14 @@ export class EditBarSingleComponent {
   }
 
   onToggleAndDescription(): ToggleAndDescriptionSingle {
-    return this.imageService.onToggleAndDescription('resize');
+    return this.imageService.onToggleAndDescription(this.manipulationType());
   }
 }
+
+type InputButtonValueModel = {
+  dataField?: DataField;
+  manipulationType: ManipulationType;
+};
 
 @Component({
   selector: 'app-edit-bar',
@@ -106,6 +107,35 @@ export class EditBarSingleComponent {
         {
           dataField: 'height',
           manipulationType: 'resize',
+        },
+      ]"
+    />
+    <app-edit-bar-single
+      manipulationType="crop"
+      [inputButtonVal]="[
+        {
+          dataField: 'x',
+          manipulationType: 'crop',
+        },
+        {
+          dataField: 'y',
+          manipulationType: 'crop',
+        },
+        {
+          dataField: 'width',
+          manipulationType: 'crop',
+        },
+        {
+          dataField: 'height',
+          manipulationType: 'crop',
+        },
+      ]"
+    />
+    <app-edit-bar-single
+      manipulationType="grayscale"
+      [inputButtonVal]="[
+        {
+          manipulationType: 'grayscale',
         },
       ]"
     />
@@ -158,23 +188,45 @@ export class EditBarNumberInputButtonComponent {
   }
 
   onToggleAndDescription(): ToggleAndDescriptionSingle {
-    return this.imageService.onToggleAndDescription('resize');
-  }
-
-  toggleDescription(): void {
-    this.imageService.toggleDescription(this.manipulationType());
-  }
-
-  onInputBoolChange(event: Event): void {
-    this.imageService.onInputBoolChange(event, this.manipulationType());
+    return this.imageService.onToggleAndDescription(this.manipulationType());
   }
 }
 
-// @Component({
-//   selector: 'app-edit-bar-number-input-button',
-//   standalone: true,
-//   imports: [],
-//   template: ``,
-//   styles: ``,
-// })
-// export class EditBarNumberInputButtonComponent {}
+@Component({
+  selector: 'app-edit-bar-checkbox-input-button',
+  standalone: true,
+  imports: [],
+  template: `
+    <label class="inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        [disabled]="!onToggleAndDescription().toggle"
+        (change)="this.onInputChange($event)"
+        [placeholder]="manipulationType()"
+        class="sr-only peer"
+      />
+      <div
+        class="relative  w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
+      ></div>
+    </label>
+  `,
+  styles: ``,
+})
+export class EditBarCheckBoxInputButtonComponent {
+  manipulationType = input.required<ManipulationType>();
+  //  value = input.required<number>();
+
+  imageService = inject(ImageService);
+
+  onInputChange(event: Event): void {
+    this.imageService.onInputChange(event, this.manipulationType());
+  }
+
+  onBooleanValue(): boolean {
+    return this.imageService.onBooleanValue(this.manipulationType());
+  }
+
+  onToggleAndDescription(): ToggleAndDescriptionSingle {
+    return this.imageService.onToggleAndDescription(this.manipulationType());
+  }
+}
