@@ -9,88 +9,60 @@ import {
 import {
   createManipulationParams,
   createToggleAndDescription,
+  DataField,
   ManipulationParams,
   ManipulationType,
   ToggleAndDescription,
   ToggleAndDescriptionSingle,
 } from '../../model/manipulation-params';
-import { NgFor, NgIf } from '@angular/common';
+import { NgFor, NgIf, TitleCasePipe } from '@angular/common';
 import { ImageService } from '../../services/image.service';
+import { forwardRef } from '@angular/core';
 
 @Component({
   selector: 'app-edit-bar-single',
   standalone: true,
-  imports: [NgIf, NgFor],
+  imports: [
+    NgIf,
+    NgFor,
+    forwardRef(() => EditBarNumberInputButtonComponent),
+    TitleCasePipe,
+  ],
   template: `
     <div class="">
       <div
         class="mb-4 ms-4 flex items-center space-x-2"
-        [class]="toggleAndDescription() ? '' : 'opacity-40'"
+        [class]="onToggleAndDescription().toggle ? '' : 'opacity-40'"
       >
         <input
           type="checkbox"
           id="enableResize"
-          [value]="toggleAndDescription()"
-          (change)="
-            this.imageService.onInputBoolChange($event, manipulationType())
-          "
+          [value]="onToggleAndDescription().toggle"
+          (change)="this.onInputBoolChange($event)"
           class="mr-2"
         />
-        <h6 class="text-gray-700">Resize:</h6>
-
-        <div *ngFor="let num of numberButton(); let i = index">
-          <input
-            type="number"
-            [value]="num"
-            [disabled]="!toggleAndDescription()"
-            (change)="
-              this.imageService.onInputChange($event, manipulationType(), i)
-            "
-            placeholder="Width"
-            class="p-2 border rounded w-20"
+        <h6 class="text-gray-700">{{ manipulationType() | titlecase }}:</h6>
+        <div *ngFor="let val of inputButtonVal(); track: val">
+          <app-edit-bar-number-input-button
+            [dataField]="val.dataField"
+            [manipulationType]="val.manipulationType"
           />
         </div>
-
-        <!-- @for (num of numberButton(); track num) {
-          <input
-            type="number"
-            [value]="num"
-            [disabled]="!toggleAndDescription()"
-            (change)="
-              this.imageService.onInputChange(
-                $event,
-                manipulationType(),
-                'width'
-              )
-            "
-            placeholder="Width"
-            class="p-2 border rounded w-20"
-          />
-        } -->
-
-        <!-- <input
-          type="number"
-          [value]="this.params().resize?.[1]"
-          (change)="onInputChange($event, 'height')"
-          [disabled]="!toggleAndDescription().resize.toggle"
-          placeholder="Height"
-          class="p-2 border rounded w-20"
-        /> -->
-
+        <!-- @for (val of inputButtonVal(); track val) { } -->
         <button
           class="ml-auto cursor-pointer text-blue-500"
           (click)="this.imageService.toggleDescription(manipulationType())"
-          [disabled]="!toggleAndDescription()"
+          [disabled]="!onToggleAndDescription().toggle"
           title="Toggle Description"
         >
           show
         </button>
       </div>
       <div
-        *ngIf="toggleDescriptionSingle().showDescription"
+        *ngIf="onToggleAndDescription().showDescription"
         class="text-sm text-gray-600"
       >
-        <div [innerHTML]="toggleDescriptionSingle().description"></div>
+        <div [innerHTML]="onToggleAndDescription().description"></div>
       </div>
     </div>
   `,
@@ -98,11 +70,25 @@ import { ImageService } from '../../services/image.service';
 })
 export class EditBarSingleComponent {
   manipulationType = input.required<ManipulationType>();
-  numberButton = input<number[]>();
-  toggleAndDescription = input.required<boolean>();
-  toggleDescriptionSingle = input.required<ToggleAndDescriptionSingle>();
+  inputButtonVal = input.required<
+    {
+      dataField: DataField;
+      manipulationType: ManipulationType;
+    }[]
+  >();
+
+  //  toggleAndDescription = input.required<boolean>();
+  // toggleDescriptionSingle = input.required<ToggleAndDescriptionSingle>();
 
   imageService = inject(ImageService);
+
+  onInputBoolChange(event: Event): void {
+    this.imageService.onInputBoolChange(event, this.manipulationType());
+  }
+
+  onToggleAndDescription(): ToggleAndDescriptionSingle {
+    return this.imageService.onToggleAndDescription('resize');
+  }
 }
 
 @Component({
@@ -112,13 +98,16 @@ export class EditBarSingleComponent {
   template: `
     <app-edit-bar-single
       manipulationType="resize"
-      [numberButton]="this.imageService.params().resize"
-      [toggleAndDescription]="
-        this.imageService.toggleAndDescription().resize.toggle
-      "
-      [toggleDescriptionSingle]="
-        this.imageService.toggleAndDescription().resize
-      "
+      [inputButtonVal]="[
+        {
+          dataField: 'width',
+          manipulationType: 'resize',
+        },
+        {
+          dataField: 'height',
+          manipulationType: 'resize',
+        },
+      ]"
     />
     <!-- <p>{{ dbg() }} : {{ this.toggleAndDescription().resize.toggle }}</p> -->
   `,
@@ -127,9 +116,58 @@ export class EditBarSingleComponent {
 export class EditBarComponent {
   //   @ViewChild(EditBarSingleComponent) editBarSingle!: EditBarSingleComponent;
 
+  dbg = signal<string>('0');
+}
+
+@Component({
+  selector: 'app-edit-bar-number-input-button',
+  standalone: true,
+  imports: [],
+  template: `
+    <input
+      type="number"
+      [value]="onNumberValue()"
+      [disabled]="!onToggleAndDescription().toggle"
+      (change)="this.onInputChange($event)"
+      [placeholder]="dataField()"
+      class="p-2 border rounded w-20"
+    />
+  `,
+  styles: ``,
+})
+export class EditBarNumberInputButtonComponent {
+  dataField = input.required<DataField>();
+  manipulationType = input.required<ManipulationType>();
+  //  value = input.required<number>();
+
   imageService = inject(ImageService);
 
-  dbg = signal<string>('0');
+  onInputChange(event: Event): void {
+    this.imageService.onInputChange(
+      event,
+      this.manipulationType(),
+      this.dataField(),
+    );
+  }
+
+  onNumberValue(): number {
+    return this.imageService.onNumberValue(
+      this.manipulationType(),
+      this.dataField(),
+    );
+  }
+
+  onToggleAndDescription(): ToggleAndDescriptionSingle {
+    return this.imageService.onToggleAndDescription('resize');
+  }
+
+  toggleDescription(): void {
+    this.imageService.toggleDescription(this.manipulationType());
+  }
+
+  onInputBoolChange(event: Event): void {
+    this.imageService.onInputBoolChange(event, this.manipulationType());
+  }
 }
 
 // @Component({

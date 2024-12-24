@@ -1,3 +1,8 @@
+export type ImageState = {
+  og_image: Uint8Array | null;
+  edit_image: Uint8Array | null;
+};
+
 export interface ManipulationParams {
   resize?: [number, number];
   crop?: [number, number, number, number];
@@ -58,6 +63,7 @@ export function createToggleAndDescription(
 }
 
 export type ManipulationType = 'resize' | 'crop' | 'grayscale' | 'invert';
+export type DataField = 'width' | 'height' | 'x' | 'y';
 
 export function onInputChange(
   event: Event,
