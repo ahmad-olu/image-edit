@@ -1,6 +1,6 @@
 use std::{io::Cursor, sync::Mutex};
 
-use image::{ImageFormat, ImageReader};
+use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use tauri::{Manager, State};
 

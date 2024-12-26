@@ -24,17 +24,12 @@ import { forwardRef } from '@angular/core';
         class="mb-4 ms-4 flex items-center space-x-2"
         [class]="onToggleAndDescription().toggle ? '' : 'opacity-40'"
       >
-        <label class="inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            [value]="onToggleAndDescription().toggle"
-            (change)="this.onInputBoolChange($event)"
-            class="sr-only peer"
-          />
-          <div
-            class="relative  w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
-          ></div>
-        </label>
+        <input
+          type="checkbox"
+          [value]="onToggleAndDescription().toggle"
+          (change)="this.onInputBoolChange($event)"
+          class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+        />
 
         <h6 class="text-gray-700">{{ manipulationType() | titlecase }}:</h6>
         <div *ngFor="let val of inputButtonVal(); track: val">
@@ -56,7 +51,7 @@ import { forwardRef } from '@angular/core';
           [disabled]="!onToggleAndDescription().toggle"
           title="Toggle Description"
         >
-          show
+          🧾📕
         </button>
       </div>
       <div
@@ -160,7 +155,7 @@ export class EditBarComponent {
       [disabled]="!onToggleAndDescription().toggle"
       (change)="this.onInputChange($event)"
       [placeholder]="dataField()"
-      class="p-2 border rounded w-20"
+      class="py-1 px-1 border rounded w-16 sm:w-20 sm:p-1"
     />
   `,
   styles: ``,
@@ -206,7 +201,7 @@ export class EditBarNumberInputButtonComponent {
         class="sr-only peer"
       />
       <div
-        class="relative  w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
+        class="relative py-1 px-1  w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
       ></div>
     </label>
   `,
