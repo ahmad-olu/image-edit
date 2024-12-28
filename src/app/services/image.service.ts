@@ -224,6 +224,7 @@ export class ImageService {
   }
 
   async editImage() {
+    this.processing.set(true);
     const filteredParams = prepareForSerialization(
       this.params(),
       this.toggleAndDescription(),
@@ -243,8 +244,10 @@ export class ImageService {
       const dataUrl = `data:image/png;base64,${base64String}`;
 
       this.editedImagePath.set(dataUrl);
+      this.processing.set(false);
     } catch (error) {
       console.log('error importing image: ' + error);
+      this.processing.set(false);
     }
   }
 
